@@ -46,6 +46,7 @@ func main() {
 	r.POST("/api/friend/reject", auth.JWTMiddleware(), friendController.RejectRequest)
 	r.GET("/api/friend/list", auth.JWTMiddleware(), friendController.ShowListFriend)
 	r.POST("/api/room", auth.JWTMiddleware(), roomController.Create)
+	r.GET("/api/rooms", auth.JWTMiddleware(), roomController.List)
 
 	r.GET("/ws", chat.ServerWS)
 	r.GET("/ws/notify", notify.ServerWS)

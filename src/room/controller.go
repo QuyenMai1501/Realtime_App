@@ -33,3 +33,12 @@ func (ctrl *Controller) Create(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, room)
 }
+
+func (ctrl *Controller) List(c *gin.Context) {
+	rooms, err := ctrl.Repo.getRoom()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, rooms)
+}
