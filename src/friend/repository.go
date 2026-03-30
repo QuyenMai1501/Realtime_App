@@ -11,12 +11,19 @@ import (
 type Repository struct {
 	FriendRequest *mongo.Collection
 	Friends       *mongo.Collection
+	Users         *mongo.Collection
+}
+
+type FriendListItem struct {
+	ID       bson.ObjectID `json:"id" bson:"_id"`
+	Username string        `json:"username" bson:"username"`
 }
 
 func NewRepository(db *mongo.Database) *Repository {
 	return &Repository{
 		FriendRequest: db.Collection("friend_requests"),
 		Friends:       db.Collection("friends"),
+		Users:         db.Collection("users"),
 	}
 }
 
@@ -61,7 +68,7 @@ func (r *Repository) RejectRequest(requestID bson.ObjectID) error {
 	return err
 }
 
-func (r *Repository) ListFriends(userID bson.ObjectID) ([]bson.ObjectID, error) {
+func (r *Repository) ListFriends(userID bson.ObjectID) ([]FriendListItem, error) {
 	cursor, err := r.Friends.Find(context.TODO(), bson.M{
 		"$or": []bson.M{
 			{"user1": userID},
@@ -73,14 +80,14 @@ func (r *Repository) ListFriends(userID bson.ObjectID) ([]bson.ObjectID, error) 
 	}
 	defer cursor.Close(context.TODO())
 
-	var ids []bson.ObjectID
+	friendIDs := make([]bson.ObjectID, 0)
 	for cursor.Next(context.TODO()) {
 		var f Friend
 		if err := cursor.Decode(&f); err == nil {
 			if f.User1 == userID {
-				ids = append(ids, f.User2)
+				friendIDs = append(friendIDs, f.User2)
 			} else {
-				ids = append(ids, f.User1)
+				friendIDs = append(friendIDs, f.User1)
 			}
 		}
 	}
@@ -89,6 +96,35 @@ func (r *Repository) ListFriends(userID bson.ObjectID) ([]bson.ObjectID, error) 
 		return nil, err
 	}
 
-	return ids, nil
+	if len(friendIDs) == 0 {
+		return []FriendListItem{}, nil
+	}
+
+	userCursor, err := r.Users.Find(context.TODO(), bson.M{"_id": bson.M{"$in": friendIDs}})
+	if err != nil {
+		return nil, err
+	}
+	defer userCursor.Close(context.TODO())
+
+	var result []FriendListItem
+	for userCursor.Next(context.TODO()) {
+		var u FriendListItem
+		if err := userCursor.Decode(&u); err == nil {
+			result = append(result, u)
+		}
+	}
+	if err := userCursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
+func (r *Repository) GetRequestByID(id bson.ObjectID) (*FriendRequest, error) {
+	var req FriendRequest
+	err := r.FriendRequest.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&req)
+	if err != nil {
+		return nil, err
+	}
+	return &req, nil
+}

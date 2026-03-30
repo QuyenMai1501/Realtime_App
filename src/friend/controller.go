@@ -2,6 +2,7 @@ package friend
 
 import (
 	"WS_GIN_GOZIL/src/auth"
+	"WS_GIN_GOZIL/src/notify"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -31,6 +32,10 @@ func (ctrl *Controller) SendRequest(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Can not send friend request"})
 		return
 	}
+
+	// Gửi notify cho người nhận
+	notify.SendToUser(toObjID.Hex(), "Bạn có một lời mời kết bạn!")
+
 	c.JSON(http.StatusOK, gin.H{"message": "Friend Request Sent!"})
 }
 
@@ -47,6 +52,12 @@ func (ctrl *Controller) AcceptRequest(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Can not accept friend request"})
 		return
 	}
+	req, err := ctrl.repo.GetRequestByID(requestObjID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User ID not found"})
+		return
+	}
+	notify.SendToUser(req.FromUserID.Hex(), "Lời mời kết bạn của bạn đã được chấp nhận!")
 	c.JSON(http.StatusOK, gin.H{"message": "Friend Request Accepted!"})
 }
 
