@@ -68,7 +68,7 @@ func (r *Repository) RejectRequest(requestID bson.ObjectID) error {
 	return err
 }
 
-func (r *Repository) ListFriends(userID bson.ObjectID) ([]FriendListItem, error) {
+func (r *Repository) ListFriends(userID bson.ObjectID) ([]bson.ObjectID, error) {
 	cursor, err := r.Friends.Find(context.TODO(), bson.M{
 		"$or": []bson.M{
 			{"user1": userID},
@@ -80,14 +80,14 @@ func (r *Repository) ListFriends(userID bson.ObjectID) ([]FriendListItem, error)
 	}
 	defer cursor.Close(context.TODO())
 
-	friendIDs := make([]bson.ObjectID, 0)
+	var ids []bson.ObjectID
 	for cursor.Next(context.TODO()) {
 		var f Friend
 		if err := cursor.Decode(&f); err == nil {
 			if f.User1 == userID {
-				friendIDs = append(friendIDs, f.User2)
+				ids = append(ids, f.User2)
 			} else {
-				friendIDs = append(friendIDs, f.User1)
+				ids = append(ids, f.User1)
 			}
 		}
 	}
@@ -96,28 +96,8 @@ func (r *Repository) ListFriends(userID bson.ObjectID) ([]FriendListItem, error)
 		return nil, err
 	}
 
-	if len(friendIDs) == 0 {
-		return []FriendListItem{}, nil
-	}
+	return ids, nil
 
-	userCursor, err := r.Users.Find(context.TODO(), bson.M{"_id": bson.M{"$in": friendIDs}})
-	if err != nil {
-		return nil, err
-	}
-	defer userCursor.Close(context.TODO())
-
-	var result []FriendListItem
-	for userCursor.Next(context.TODO()) {
-		var u FriendListItem
-		if err := userCursor.Decode(&u); err == nil {
-			result = append(result, u)
-		}
-	}
-	if err := userCursor.Err(); err != nil {
-		return nil, err
-	}
-
-	return result, nil
 }
 
 func (r *Repository) GetRequestByID(id bson.ObjectID) (*FriendRequest, error) {

@@ -3,6 +3,7 @@ package friend
 import (
 	"WS_GIN_GOZIL/src/auth"
 	"WS_GIN_GOZIL/src/notify"
+	"WS_GIN_GOZIL/src/user"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,10 +12,11 @@ import (
 
 type Controller struct {
 	repo *Repository
+	UserRepo *user.Repository
 }
 
-func NewController(r *Repository) *Controller {
-	return &Controller{repo: r}
+func NewController(r *Repository, ur *user.Repository) *Controller {
+	return &Controller{repo: r, UserRepo: ur}
 }
 
 func (ctrl *Controller) SendRequest(c *gin.Context) {
@@ -84,22 +86,26 @@ func (ctrl *Controller) RejectRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Friend Request Rejected!"})
 }
 
-func (ctrl *Controller) ShowListFriend(c *gin.Context)  {
-	userID, ok := c.MustGet(auth.UserIDKey).(string)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user context"})
+func (ctrl *Controller) ListMyFriend(c *gin.Context) {
+	userIDStr := c.MustGet(auth.UserIDKey).(string)
+	userID, _ := bson.ObjectIDFromHex(userIDStr)
+	friendIDs, _ := ctrl.repo.ListFriends(userID)
+	if len(friendIDs) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"friends": []gin.H{},
+		})
 		return
 	}
-	userObjID, err := bson.ObjectIDFromHex(userID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
+	users := ctrl.UserRepo.FindManyByIDs(friendIDs)
+	result := make([]gin.H, 0, len(users))
+	for _, u := range users {
+		result = append(result, gin.H{
+			"id":       u.ID.Hex(),
+			"username": u.Username,
+			"email":    u.Email,
+		})
 	}
-
-	friends, err := ctrl.repo.ListFriends(userObjID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Can not get friend list"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"friends": friends})
+	c.JSON(http.StatusOK, gin.H{
+		"friends": result,
+	})
 }

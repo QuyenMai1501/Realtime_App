@@ -55,10 +55,10 @@ func CreateUserIndexes(collection *mongo.Collection) error {
 	return nil
 }
 
-//Update Patch
+// Update Patch
 func (r *Repository) UpdateByID(userID bson.ObjectID, update bson.M) error {
 	if len(update) == 0 {
-		return  errors.New("empty update payload")
+		return errors.New("empty update payload")
 	}
 
 	result, err := r.Collection.UpdateByID(context.TODO(), userID, bson.M{"$set": update})
@@ -67,8 +67,24 @@ func (r *Repository) UpdateByID(userID bson.ObjectID, update bson.M) error {
 	}
 
 	if result.MatchedCount == 0 {
-		return  mongo.ErrNoDocuments
+		return mongo.ErrNoDocuments
 	}
 
 	return nil
+}
+
+func (r *Repository) FindByID(id bson.ObjectID) *User {
+	var u User
+	r.Collection.FindOne(context.TODO(), bson.M{
+		"_id": id,
+	}).Decode(&u)
+	return &u
+}
+
+func (r *Repository) FindManyByIDs(ids []bson.ObjectID) []User {
+	cursor, _ := r.Collection.Find(context.TODO(), bson.M{"_id": bson.M{"$in": ids}})
+	defer cursor.Close(context.TODO())
+	var users []User
+	cursor.All(context.TODO(), &users)
+	return users
 }
