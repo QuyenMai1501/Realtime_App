@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>My Profile</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="card">
+        <h1>Thông tin tài khoản</h1>
+        <p class="sub">Dữ liệu lấy từ API /api/myprofile</p>
+
+        <div class="row">
+            <div class="label">Username</div>
+            <div id="username" class="value">...</div>
+        </div>
+        <div class="row">
+            <div class="label">Email</div>
+            <div id="email" class="value">...</div>
+        </div>
+        <div class="row">
+            <div class="label">User ID</div>
+            <div id="userId" class="value">...</div>
+        </div>
+
+        <button id="goCallBtn">Vào trang gọi (index)</button>
+        <div id="msg" class="msg"></div>
+    </div>
+
+    <script>
+        const msgEl = document.getElementById("msg");
+
+        function setMsg(text, type = "") {
+            msgEl.className = "msg" + (type ? " " + type : "");
+            msgEl.textContent = text;
+        }
+
+        function ensureAuth() {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "/ui/login.html";
+                return null;
+            }
+            return token;
+        }
+
+        async function loadProfile() {
+            const token = ensureAuth();
+            if (!token) return;
+
+            try {
+                const res = await fetch("/api/myprofile", {
+                    headers: { Authorization: "Bearer " + token }
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    setMsg(data.message || "Không lấy được profile", "error");
+                    return;
+                }
+
+                document.getElementById("username").textContent = data.username || "";
+                document.getElementById("email").textContent = data.email || "";
+                document.getElementById("userId").textContent = data.id || data._id || "";
+
+                setMsg("Tải profile thành công!", "ok");
+            } catch (err) {
+                setMsg("Lỗi kết nối server: " + err.message, "error");
+            }
+        }
+
+        document.getElementById("goCallBtn").addEventListener("click", () => {
+            window.location.href = "/ui/index.html";
+        });
+
+        loadProfile();
+    </script>
+</body>
+</html>

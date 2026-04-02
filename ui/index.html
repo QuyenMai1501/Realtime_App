@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Call Signaling</title>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <h1>Call Signaling</h1>
+    <div>
+      <label>My User:</label>
+      <input id="myId" placeholder="My Username" type="text" disabled />
+    </div>
+    <br />
+    <div>
+      <label>Target User to call:</label>
+      <select id="targetId"></select>
+    </div>
+    <br />
+    <div>
+      <button id="connectBtn">Signaling connection</button>
+      <button id="startCameraBtn">Activate camera</button>
+      <button id="callBtn">Start calling</button>
+      <button id="hangupBtn">Hang up the call</button>
+    </div>
+    <br />
+    <div>
+      <p>Call Signaling status</p>
+      <pre id="log"></pre>
+    </div>
+
+    <br />
+    <div>
+      <h3>Local Video</h3>
+      <video
+        id="localVideo"
+        autoplay
+        playsinline
+        muted
+        width="320"
+        height="240"></video>
+    </div>
+
+    <div>
+      <h3>Remote Video</h3>
+      <video
+        id="remoteVideo"
+        autoplay
+        playsinline
+        muted
+        width="320"
+        height="240"></video>
+    </div>
+
+    <script src="./index.js"></script>
+  </body>
+</html>
